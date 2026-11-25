@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediSync — Intelligent Hospital Dashboard & Medical Report Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- HTML5 QR Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">⚕️</div>
+        <div class="brand-text">
+          <h1>MediSync</h1>
+          <span>Smart Hospital Health System</span>
+        </div>
+      </div>
+
+      <!-- Portal Switcher -->
+      <div class="portal-switch">
+        <button class="portal-btn active" id="btn-patient-portal" onclick="switchPortal('patient')">
+          <span>👤</span> Patient Portal
+        </button>
+        <button class="portal-btn" id="btn-doctor-portal" onclick="switchPortal('doctor')">
+          <span>🩺</span> Doctor Portal
+        </button>
+      </div>
+
+      <!-- Security & Anti-Bot Protection Status -->
+      <div class="nav-actions">
+        <div class="bot-shield-badge" title="MediSync Advanced Bot & Threat Protection Active">
+          <span class="shield-dot"></span>
+          <span>🛡️ Bot Shield Active</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="container">
+
+    <!-- ========================================== -->
+    <!-- PATIENT PORTAL                             -->
+    <!-- ========================================== -->
+    <div id="patient-portal-view">
+      <!-- Tabs Nav -->
+      <div class="tabs-nav">
+        <button class="tab-link active" onclick="switchPatientTab('analyze')">
+          <span>📄</span> Upload & Analyze Report
+        </button>
+        <button class="tab-link" onclick="switchPatientTab('kb')">
+          <span>📚</span> Medical Knowledge Base
+        </button>
+        <button class="tab-link" onclick="switchPatientTab('book')">
+          <span>📅</span> Book Appointment
+        </button>
+        <button class="tab-link" onclick="switchPatientTab('my-appts')">
+          <span>📋</span> My Appointments
+        </button>
+        <button class="tab-link" onclick="switchPatientTab('voice')">
+          <span>💬</span> RAG Chatbot & Voice
+        </button>
+      </div>
+
+      <!-- TAB 1: REPORT ANALYZER -->
+      <section id="patient-tab-analyze">
+        <div class="grid-2">
+          <!-- Left Col: Upload & Input -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title"><span>📤</span> Upload Medical Lab Report</h2>
+              </div>
+              <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.25rem;">
+                Upload your blood test, metabolic panel, or imaging report (PDF, PNG, JPG). Our Gemini Clinical AI will extract data and explain lab markers in plain English.
+              </p>
+
+              <div class="upload-zone" id="drop-zone" onclick="document.getElementById('report-file-input').click()">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                  <h3>Drop your report here or click to browse</h3>
+                  <p>Supports PDF, JPG, PNG (Max 15MB)</p>
+                </div>
+                <input type="file" id="report-file-input" class="hidden-input" accept=".pdf,image/*" onchange="handleFileSelected(event)">
+                <!-- Anti-Bot Honeypot -->
+                <input type="text" id="upload-bot-trap" name="bot_trap" style="display:none;" tabindex="-1" autocomplete="off" aria-hidden="true">
+              </div>
+
+              <!-- Selected File Preview -->
+              <div id="selected-file-info" style="display: none; margin-top: 1rem; padding: 0.75rem 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span>📎</span>
+                  <strong id="selected-filename" style="font-size: 0.88rem;">filename.pdf</strong>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-submit-analyze" onclick="uploadAndAnalyze()">
+                  Analyze with Gemini
+                </button>
+              </div>
+
+              <!-- Quick Samples Loader -->
+              <div class="samples-bar">
+                <span class="samples-label">Verified Clinical Samples:</span>
+                <button class="chip-btn" onclick="loadSampleReport('cbc')">🩸 CBC Panel</button>
+                <button class="chip-btn" onclick="loadSampleReport('thyroid')">🦋 Thyroid (TSH/FT4)</button>
+                <button class="chip-btn" onclick="loadSampleReport('liver')">🫀 Liver Panel (LFT)</button>
+                <button class="chip-btn" onclick="loadSampleReport('kidney')">🧪 Kidney (eGFR/Creatinine)</button>
+              </div>
+
+              <!-- Loader State -->
+              <div id="analysis-loader" style="display: none; margin-top: 1.5rem; text-align: center; padding: 1.5rem; background: #f0fdfa; border-radius: 8px;">
+                <div class="spinner" style="border-top-color: var(--primary); width: 32px; height: 32px; margin-bottom: 0.75rem;"></div>
+                <h4 style="color: var(--primary-dark); font-size: 0.95rem;">Extracting document text & processing with Gemini AI...</h4>
+                <p style="font-size: 0.8rem; color: var(--gray-500); margin-top: 0.25rem;">Applying clinical safety validation rules (Zero Disease Conclusions)</p>
+              </div>
+            </div>
+
+            <!-- Doctor Access QR Pass Card -->
+            <div class="card" id="qr-access-card" style="margin-top: 1.5rem; display: none;">
+              <div class="card-header">
+                <h3 class="card-title"><span>📱</span> Doctor QR Access Pass</h3>
+                <span class="badge badge-normal">Active</span>
+              </div>
+              <div class="qr-card-content">
+                <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.75rem;">
+                  Show this QR code to your doctor during consultation. Scanning grants immediate access to this document and analytical summary.
+                </p>
+                <div class="qr-image-wrapper">
+                  <img id="qr-code-image" src="" alt="Doctor Access QR Code" class="qr-img">
+                </div>
+                <div>
+                  <span style="font-size: 0.8rem; color: var(--gray-500);">Report Access Token:</span><br>
+                  <span class="token-pill" id="qr-token-text">TK-XXXXXX</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                  <button class="btn btn-outline btn-sm" onclick="copyToken()">📋 Copy Token</button>
+                  <button class="btn btn-primary btn-sm" onclick="openDoctorDirect()">🩺 Open in Doctor View</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Col: AI Analysis Results -->
+          <div>
+            <!-- Empty Placeholder -->
+            <div class="card" id="analysis-placeholder" style="text-align: center; padding: 4rem 2rem; color: var(--gray-500);">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+              <h3 style="color: var(--gray-700); font-weight: 700; margin-bottom: 0.5rem;">No Report Analyzed Yet</h3>
+              <p style="font-size: 0.9rem; max-width: 400px; margin: 0 auto;">
+                Upload a medical report or click one of the quick samples to view parameter breakdowns, reference intervals, and suggested doctor questions.
+              </p>
+            </div>
+
+            <!-- Analysis Details Container -->
+            <div id="analysis-results-container" style="display: none;">
+              <!-- Safety Disclaimer Banner (Mandatory Medical Guardrail) -->
+              <div class="disclaimer-banner">
+                <div class="disclaimer-icon">⚠️</div>
+                <div class="disclaimer-text">
+                  <h4>Medical & Clinical Safety Disclaimer</h4>
+                  <p id="analysis-disclaimer-text">
+                    This automated AI analysis is for educational and informational purposes only. It does NOT provide medical diagnoses or conclude diseases. Always consult your healthcare provider.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Report Summary Card -->
+              <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                      <h3 class="card-title" id="report-title-display">Laboratory Health Report</h3>
+                      <span class="badge badge-normal" id="ai-engine-badge" style="font-size: 0.72rem;">MedGemma RAG</span>
+                    </div>
+                    <span style="font-size: 0.8rem; color: var(--gray-500);" id="report-meta-display">Specimen evaluated</span>
+                  </div>
+                  <button class="btn btn-outline btn-sm" onclick="switchPatientTab('voice')">
+                    🎙️ Ask Voice Assistant
+                  </button>
+                </div>
+                <p id="report-overview-text" style="font-size: 0.92rem; color: var(--gray-700); line-height: 1.6;">
+                  Summary overview...
+                </p>
+
+                <!-- Parameter Table -->
+                <h4 style="margin-top: 1.5rem; font-size: 0.95rem; font-weight: 700; color: var(--gray-800);">
+                  Laboratory Indicators & Reference Ranges:
+                </h4>
+                <div style="overflow-x: auto;">
+                  <table class="param-table">
+                    <thead>
+                      <tr>
+                        <th>Parameter</th>
+                        <th>Observed</th>
+                        <th>Standard Reference</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="param-table-body">
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Observations & Questions to Ask Doctor -->
+              <div class="grid-2" style="margin-bottom: 1.5rem;">
+                <div class="card">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.75rem;">
+                    💡 General Observations
+                  </h4>
+                  <ul class="check-list" id="general-obs-list"></ul>
+                </div>
+                <div class="card">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.75rem;">
+                    🩺 Questions for Your Doctor
+                  </h4>
+                  <ul class="check-list" id="doctor-questions-list"></ul>
+                </div>
+              </div>
+
+              <!-- Reference Range Limitations & Authoritative Sources (RAG Grounding) -->
+              <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                  <h4 class="card-title" style="font-size: 0.95rem;">
+                    <span>📖</span> Clinical Reference Range Nuances & Limitations
+                  </h4>
+                </div>
+                <ul class="check-list" id="reference-limitations-list">
+                  <!-- Populated from RAG Engine -->
+                </ul>
+                <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--gray-200); font-size: 0.8rem; color: var(--gray-500);">
+                  <strong>Verified Clinical Sources Cited:</strong>
+                  <div id="sources-cited-badges" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem;"></div>
+                </div>
+              </div>
+
+              <!-- Action to book appointment with report linked -->
+              <div style="text-align: right;">
+                <button class="btn btn-primary" onclick="proceedToBookingWithCurrentReport()">
+                  📅 Book Doctor Appointment with This Report →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MEDICAL KNOWLEDGE BASE -->
+      <section id="patient-tab-kb" style="display: none;">
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title"><span>📚</span> Clinical Laboratory Knowledge Base & Interpretation Guide</h2>
+              <span style="font-size: 0.82rem; color: var(--gray-500);">Evidence-based reference definitions for CBC, Thyroid, Liver, and Kidney tests</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadMedicalKnowledgeBase()">🔄 Refresh</button>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--gray-700); line-height: 1.6;">
+            Laboratory tests measure specific biological markers to assess organ function and cellular equilibrium. 
+            All values in MediSync are grounded in standard clinical references from the <strong>Association for Diagnostics & Laboratory Medicine (ADLM)</strong>, 
+            <strong>NIH MedlinePlus</strong>, and <strong>World Health Organization (WHO)</strong> guidelines.
+          </p>
+        </div>
+
+        <!-- 4 Major Clinical Panels Overview Cards -->
+        <div class="grid-2" style="margin-bottom: 1.5rem;" id="kb-panels-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Reference Range Limitations Principles Guide -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h3 class="card-title"><span>⚖️</span> Core Principles of Interpreting Reference Ranges & Their Limitations</h3>
+          </div>
+          <div class="grid-2" id="kb-principles-grid" style="gap: 1rem;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Authoritative Medical References -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><span>🏛️</span> Reliable Medical Reference Materials</h3>
+          </div>
+          <div id="kb-references-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: BOOK APPOINTMENT -->
+      <section id="patient-tab-book" style="display: none;">
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+          <div class="card-header">
+            <h2 class="card-title"><span>📅</span> Schedule a Specialist Consultation</h2>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.5rem;">
+            Select an attending physician, choose your preferred slot, and optionally attach your recent medical report token for advance doctor review.
+          </p>
+
+          <form id="appointment-form" onsubmit="handleAppointmentSubmit(event)">
+            <!-- Anti-Bot Honeypot: Hidden from real humans, caught by automated spambots -->
+            <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+              <label for="appt-bot-trap">Leave this blank</label>
+              <input type="text" id="appt-bot-trap" name="bot_trap" tabindex="-1" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Select Specialist Physician</label>
+              <div class="grid-2" id="doctor-select-grid" style="gap: 0.75rem;">
+                <!-- Populated via JS -->
+              </div>
+              <input type="hidden" id="selected-doctor-id" required>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Your Full Name</label>
+                <input type="text" class="form-input" id="appt-patient-name" required placeholder="e.g. Sarah Connor">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contact Phone</label>
+                <input type="tel" class="form-input" id="appt-patient-phone" required placeholder="e.g. +1 (555) 234-5678">
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Preferred Date</label>
+                <input type="date" class="form-input" id="appt-date" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Preferred Time Slot</label>
+                <select class="form-select" id="appt-time" required>
+                  <option value="">Select a time...</option>
+                  <option value="09:30 AM">09:30 AM</option>
+                  <option value="11:00 AM">11:00 AM</option>
+                  <option value="02:00 PM">02:00 PM</option>
+                  <option value="03:30 PM">03:30 PM</option>
+                  <option value="05:00 PM">05:00 PM</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Attached Report Token (Optional)</label>
+              <input type="text" class="form-input" id="appt-report-token" placeholder="e.g. TK-AB12CD (Leave blank or paste token)">
+              <span style="font-size: 0.78rem; color: var(--gray-500); margin-top: 3px; display: block;">
+                Attaching your token allows the doctor to review your AI-analyzed laboratory results before your arrival.
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Reason for Visit / Main Symptoms</label>
+              <textarea class="form-textarea" id="appt-reason" rows="3" placeholder="Briefly describe what you'd like to discuss..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem;">
+              Confirm & Book Appointment
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 3: MY APPOINTMENTS -->
+      <section id="patient-tab-my-appts" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span>📋</span> Scheduled Consultations</h2>
+            <button class="btn btn-outline btn-sm" onclick="loadPatientAppointments()">🔄 Refresh</button>
+          </div>
+          <div id="patient-appts-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: RAG CLINICAL & APPOINTMENT CHATBOT -->
+      <section id="patient-tab-voice" style="display: none;">
+        <div class="chat-card">
+          <!-- Chat Header -->
+          <div class="chat-header">
+            <div class="chat-header-title">
+              <span style="font-size: 1.4rem;">🤖</span>
+              <div>
+                <h3>MediSync RAG Assistant</h3>
+                <span style="font-size: 0.78rem; color: var(--gray-500);">Evidence-based Lab Explanations & Doctor Appointments</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="active-report-badge" id="chat-active-report-badge">
+                📄 No report loaded
+              </span>
+              <label style="font-size: 0.8rem; color: var(--gray-600); display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                <input type="checkbox" id="chat-tts-toggle" checked>
+                <span>🔊 Voice Out</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Chat Conversation Window -->
+          <div class="chat-messages-box" id="chat-messages-box">
+            <!-- Initial Welcome Assistant Message -->
+            <div class="chat-msg-row assistant">
+              <div class="chat-avatar">🩺</div>
+              <div class="chat-bubble">
+                <p>Hello! I am your <strong>MediSync RAG Clinical & Appointment Assistant</strong>.</p>
+                <p style="margin-top: 0.4rem;">I can help you with:</p>
+                <ul>
+                  <li><strong>Your Lab Levels</strong>: Ask about your test values (e.g. <em>"Why is my creatinine high?"</em>, <em>"Explain my hemoglobin"</em>, <em>"Are my liver enzymes normal?"</em>).</li>
+                  <li><strong>Appointments</strong>: Ask <em>"Which doctor should I see for my report?"</em> or <em>"How do I book a consultation with Dr. Jenkins?"</em>.</li>
+                </ul>
+                <blockquote>
+                  ⚠️ <strong>Medical Guardrail</strong>: I provide educational explanations grounded in standard clinical references. I do not diagnose illnesses. Always consult your attending physician.
+                </blockquote>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Prompt Chips -->
+          <div class="chat-chips-bar">
+            <button class="chip-btn" onclick="sendChatPrompt('Explain my out-of-range laboratory levels')">🩸 Out-of-Range Levels</button>
+            <button class="chip-btn" onclick="sendChatPrompt('Which doctor should I book an appointment with for my report?')">🩺 Which Doctor Should I See?</button>
+            <button class="chip-btn" onclick="sendChatPrompt('What does my Hemoglobin level indicate?')">🩸 Hemoglobin</button>
+            <button class="chip-btn" onclick="sendChatPrompt('What does my TSH level mean?')">🦋 TSH</button>
+            <button class="chip-btn" onclick="sendChatPrompt('Explain my liver enzymes (ALT / AST)')">🫀 Liver Enzymes</button>
+            <button class="chip-btn" onclick="sendChatPrompt('What does my serum creatinine level mean?')">🧪 Creatinine</button>
+            <button class="chip-btn" onclick="sendChatPrompt('How do I schedule an appointment with a specialist?')">📅 How to Book</button>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <div class="chat-input-bar">
+            <!-- Voice Input Button -->
+            <button class="chat-mic-btn" id="mic-btn" onclick="toggleVoiceRecording()" title="Click to speak your question">
+              🎤
+            </button>
+            <input type="text" class="form-input" id="chat-text-input" placeholder="Ask about your lab levels or which doctor to book..." onkeypress="if(event.key==='Enter') submitChatMessage()">
+            <button class="btn btn-primary" onclick="submitChatMessage()" id="chat-send-btn" style="padding: 0.65rem 1.25rem;">
+              Send
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- DOCTOR PORTAL                              -->
+    <!-- ========================================== -->
+    <div id="doctor-portal-view" style="display: none;">
+      <!-- Doctor Sub-nav Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-link active" onclick="switchDoctorTab('scan')">
+          <span>🔍</span> Scan / Access Patient Record
+        </button>
+        <button class="tab-link" onclick="switchDoctorTab('schedule')">
+          <span>📅</span> Appointments Schedule
+        </button>
+      </div>
+
+      <!-- DOCTOR TAB 1: SCAN & CLINICAL REVIEW -->
+      <section id="doctor-tab-scan">
+        <div class="grid-2">
+          <!-- Left Col: QR Scanner & Token Lookup -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title"><span>📷</span> Scan Patient QR Code</h2>
+              </div>
+              <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.25rem;">
+                Scan patient's physical or digital QR pass via webcam or enter the token manually to unlock their health records.
+              </p>
+
+              <!-- Camera QR Scanner View -->
+              <div class="scanner-container">
+                <div id="reader"></div>
+                <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.5rem;">
+                  <button class="btn btn-primary btn-sm" id="btn-toggle-cam" onclick="toggleCameraScanner()">
+                    📷 Start Camera Scanner
+                  </button>
+                </div>
+              </div>
+
+              <!-- Manual Token Input Form -->
+              <div style="margin-top: 1.5rem; border-top: 1px solid var(--gray-200); padding-top: 1.25rem;">
+                <label class="form-label">Or Enter Patient Access Token</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input type="text" class="form-input" id="doctor-token-input" placeholder="e.g. TK-7A9B1C" style="font-family: monospace; font-weight: 700;">
+                  <button class="btn btn-primary" onclick="lookupPatientReport()">Fetch Record</button>
+                </div>
+              </div>
+
+              <!-- Recent Reports List -->
+              <div style="margin-top: 1.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--gray-600); margin-bottom: 0.5rem; text-transform: uppercase;">
+                  Recent Reports in Hospital Database:
+                </h4>
+                <div id="doctor-recent-reports-list" style="max-height: 200px; overflow-y: auto;">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Col: Patient Clinical Chart & Doctor Notes -->
+          <div>
+            <div class="card" id="doc-patient-empty" style="text-align: center; padding: 4rem 2rem; color: var(--gray-500);">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">🩺</div>
+              <h3 style="color: var(--gray-700); font-weight: 700;">Awaiting Patient Scan</h3>
+              <p style="font-size: 0.9rem;">Scan a patient QR code or enter an access token to open clinical analytics, lab records, and add consultation notes.</p>
+            </div>
+
+            <!-- Loaded Record Chart -->
+            <div id="doc-patient-record" style="display: none;">
+              <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                  <div>
+                    <span class="badge badge-normal" id="doc-chart-token">TOKEN</span>
+                    <h3 class="card-title" id="doc-chart-patient" style="margin-top: 0.25rem;">Patient Name</h3>
+                    <span style="font-size: 0.8rem; color: var(--gray-500);" id="doc-chart-date">Date</span>
+                  </div>
+                </div>
+
+                <!-- Parameters summary -->
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                  Clinical Laboratory Parameters:
+                </h4>
+                <div style="overflow-x: auto;">
+                  <table class="param-table">
+                    <thead>
+                      <tr>
+                        <th>Parameter</th>
+                        <th>Observed</th>
+                        <th>Reference</th>
+                        <th>Flag</th>
+                      </tr>
+                    </thead>
+                    <tbody id="doc-param-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Doctor Consultation Notes & Sign-off -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><span>✍️</span> Attending Doctor Clinical Notes</h3>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Physician Name</label>
+                  <input type="text" class="form-input" id="doc-signing-name" value="Dr. Sarah Jenkins, MD">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Clinical Remarks, Diagnosis & Prescriptions</label>
+                  <textarea class="form-textarea" id="doc-clinical-notes-input" rows="4" placeholder="Write clinical assessment, advice, prescribed medications, follow-up recommendations..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="saveDoctorClinicalNotes()">
+                  Save & Sign Consultation Note
+                </button>
+
+                <!-- Existing Doctor Notes History -->
+                <div style="margin-top: 1.5rem;">
+                  <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--gray-600); margin-bottom: 0.5rem;">
+                    Consultation History:
+                  </h4>
+                  <div id="doc-notes-history-container">
+                    <p style="font-size: 0.85rem; color: var(--gray-500);">No prior doctor notes recorded yet.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOCTOR TAB 2: SCHEDULE -->
+      <section id="doctor-tab-schedule" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span>📅</span> Doctor Consultations Queue</h2>
+            <button class="btn btn-outline btn-sm" onclick="loadDoctorAppointments()">🔄 Refresh</button>
+          </div>
+          <div id="doctor-appts-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+
